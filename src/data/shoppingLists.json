@@ -1,0 +1,24 @@
+[
+  {
+    "_id": "ZFSD34345",
+    "name": "Test List",
+    "products": [{
+      "name": "tomato",
+      "status": false
+    }, {
+      "name": "Corn",
+      "status": true
+    }]
+  },
+  {
+    "_id": "Zertt4345",
+    "name": "Test List2",
+    "products": [{
+      "name": "tomato",
+      "status": false
+    }, {
+      "name": "Corn",
+      "status": true
+    }]
+  }
+]
