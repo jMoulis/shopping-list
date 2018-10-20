@@ -26,8 +26,8 @@ if (process.env.NODE_ENV === 'dev' || process.env.NODE_ENV === 'test') {
   server = http.createServer(app);
 } else {
   const httpsOptions = {
-    key: fs.readFileSync(process.env.HTTPS_KEY),
-    cert: fs.readFileSync(process.env.HTTPS_CERT),
+    key: fs.readFileSync('/etc/ssl/private/_.julienmoulis.io_private_key.key'),
+    cert: fs.readFileSync('/etc/ssl/certs/julienmoulis.io_ssl_certificate.cer'),
   };
   server = https.createServer(httpsOptions, app);
 }
