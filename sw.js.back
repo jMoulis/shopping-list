@@ -1,0 +1,60 @@
+
+ && sw-precache --config=sw-precache-config.js
+const CACHE_STATIC_NAME = 'static-v16';
+const CACHE_DYNAMIC_NAME = 'dynamic';
+
+self.addEventListener('install', event => {
+  console.log('[Service Worker] Installing');
+  event.waitUntil(
+    caches.open(CACHE_STATIC_NAME).then(cache => {
+      console.log('[Service worker] PreCaching App shell');
+      cache.addAll([
+        '/',
+        '/index.html',
+        '/static/css/main.32ad211c.chunk.css',
+        '/static/js/1.a2b97101.chunk.js',
+        '/static/js/main.a5798a86.chunk.js',
+        '/static/js/runtime~main.229c360f.js',
+        'https://fonts.googleapis.com/css?family=Roboto:300,400,500',
+        'https://fonts.googleapis.com/icon?family=Material+Icons',
+        // 'https://fonts.gstatic.com/s/materialicons/v41/flUhRq6tzZclQEJ-Vdg-IuiaDsNcIhQ8tQ.woff2',
+      ]);
+    }),
+  );
+});
+
+self.addEventListener('activate', event => {
+  console.log('[Service Worker]: Activating');
+  event.waitUntil(
+    caches.keys().then(keyList => {
+      return Promise.all(
+        keyList.map(key => {
+          if (key !== CACHE_STATIC_NAME && key !== CACHE_DYNAMIC_NAME) {
+            return caches.delete(key);
+          }
+        }),
+      );
+    }),
+  );
+  return self.clients.claim();
+});
+
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request).then(response => {
+      if (response) {
+        return response;
+      }
+      return fetch(event.request)
+        .then(res => {
+          return caches.open(CACHE_DYNAMIC_NAME).then(cache => {
+            // cache.put(event.request.url, res.clone());
+            return res;
+          });
+        })
+        .catch(err => {
+          console.error(err);
+        });
+    }),
+  );
+});

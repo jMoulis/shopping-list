@@ -1,11 +1,13 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import AddIcon from '@material-ui/icons/Add';
 import {
   Grid,
   Typography,
   withStyles,
   TextField,
   Button,
+  SwipeableDrawer,
 } from '@material-ui/core';
 import Category from './Category';
 
@@ -14,12 +16,17 @@ const styles = theme => ({
     padding: theme.spacing.unit,
     paddingTop: theme.spacing.unit * 10,
   },
+  button: {
+    margin: theme.spacing.unit,
+  },
   form: {
     display: 'flex',
     flexDirection: 'column',
+    padding: theme.spacing.unit,
+    alignItems: 'flex-end',
   },
-  button: {
-    margin: theme.spacing.unit,
+  input: {
+    width: '100%',
   },
 });
 class ShoppingList extends React.Component {
@@ -28,20 +35,24 @@ class ShoppingList extends React.Component {
     router: PropTypes.object.isRequired,
   };
 
-  state = {
-    data: {},
-    error: null,
-    inputAddCat: false,
-    form: {
-      category: {
-        name: '',
-        list: {},
+  constructor(props) {
+    super(props);
+    this.addCategoryInput = React.createRef();
+    this.state = {
+      data: {},
+      error: null,
+      inputAddCat: false,
+      form: {
+        category: {
+          name: '',
+          list: {},
+        },
+        product: {
+          name: '',
+        },
       },
-      product: {
-        name: '',
-      },
-    },
-  };
+    };
+  }
 
   componentDidMount() {
     const {
@@ -63,6 +74,9 @@ class ShoppingList extends React.Component {
     socket.on('CREATE_CATEGORY_SUCCESS', ({ payload }) =>
       this.addCategoryToList(payload),
     );
+    socket.on('UPDATE_CATEGORY_SUCCESS', ({ payload }) =>
+      this.updateCategory(payload),
+    );
     socket.on('CREATE_PRODUCT_SUCCESS', ({ payload }) =>
       this.addProductsToCategory(payload),
     );
@@ -73,6 +87,22 @@ class ShoppingList extends React.Component {
       data: {
         ...prevState.data,
         categories: [...prevState.data.categories, data],
+      },
+    }));
+  };
+
+  updateCategory = data => {
+    const { data: list } = this.state;
+    const newList = list.categories.map(category => {
+      if (category._id === data._id) {
+        return data;
+      }
+      return category;
+    });
+    this.setState(prevState => ({
+      data: {
+        ...prevState.data,
+        categories: newList,
       },
     }));
   };
@@ -109,10 +139,16 @@ class ShoppingList extends React.Component {
     }));
   };
 
-  handleShowInputAddCat = () =>
-    this.setState(prevState => ({
-      inputAddCat: !prevState.inputAddCat,
-    }));
+  handleShowInputAddCat = () => {
+    this.setState(
+      prevState => ({
+        inputAddCat: !prevState.inputAddCat,
+      }),
+      () => {
+        this.setInputFocus();
+      },
+    );
+  };
 
   handleInputCategoryChange = ({ target }) => {
     const { value } = target;
@@ -143,7 +179,13 @@ class ShoppingList extends React.Component {
           name: '',
         },
       },
+      inputAddCat: false,
     }));
+  };
+
+  setInputFocus = () => {
+    if (this.addCategoryInput.current)
+      return this.addCategoryInput.current.focus();
   };
 
   render() {
@@ -153,53 +195,54 @@ class ShoppingList extends React.Component {
     if (Object.keys(list).length === 0) return <span>loading</span>;
     return (
       <Grid container direction="column" className={classes.root}>
-        <Typography variant="h4">{list.name}</Typography>
-        {inputAddCat && (
-          <form className={classes.form} onSubmit={this.handleCategoryOnSubmit}>
-            <TextField
-              label="Category name"
-              margin="dense"
-              name="name"
-              onChange={this.handleInputCategoryChange}
-              value={form.category.name}
-              className={classes.textField}
-              variant="outlined"
-            />
-            <div>
+        <Grid container justify="space-between" alignItems="center">
+          <Typography variant="h4">{list.name}</Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            type="button"
+            onClick={this.handleShowInputAddCat}
+          >
+            <AddIcon />
+            Catégorie
+          </Button>
+        </Grid>
+        <SwipeableDrawer
+          anchor="bottom"
+          open={inputAddCat}
+          onClose={this.handleShowInputAddCat}
+          onOpen={this.handleShowInputAddCat}
+        >
+          <div tabIndex={0} role="button">
+            <form
+              className={classes.form}
+              onSubmit={this.handleCategoryOnSubmit}
+            >
+              <TextField
+                autoFocus
+                autoComplete="false"
+                label="Category name"
+                margin="dense"
+                name="name"
+                onChange={this.handleInputCategoryChange}
+                value={form.category.name}
+                className={classes.textField}
+                variant="outlined"
+                classes={{ root: classes.input }}
+              />
+
               <Button
                 variant="contained"
                 color="primary"
-                size="small"
                 type="submit"
                 className={classes.button}
                 disabled={form.category.name.length === 0}
               >
                 Create
               </Button>
-              <Button
-                variant="contained"
-                color="secondary"
-                size="small"
-                type="button"
-                className={classes.button}
-                onClick={this.handleShowInputAddCat}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        )}
-        {!inputAddCat && (
-          <Button
-            variant="contained"
-            color="primary"
-            size="small"
-            type="button"
-            onClick={this.handleShowInputAddCat}
-          >
-            New cat
-          </Button>
-        )}
+            </form>
+          </div>
+        </SwipeableDrawer>
         <ul>
           {list.categories.map((category, index) => (
             <Category key={index} socket={socket} category={category} />

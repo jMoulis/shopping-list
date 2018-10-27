@@ -14,6 +14,7 @@
     "eslint-config-prettier": "^3.1.0",
     "eslint-plugin-prettier": "^3.0.0",
     "express": "^4.16.4",
+    "idb": "^2.1.3",
     "mongoose": "^5.3.4",
     "node-sass": "^4.9.4",
     "nodemon": "^1.18.4",
@@ -29,7 +30,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "server": "NODE_ENV=dev nodemon back/index.js",
+    "server": "NODE_ENV=dev nodemon back/index.js --ignore src/ --ignore service-worker.tmpl.js --ignore package.json",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -42,5 +43,8 @@
     "not dead",
     "not ie <= 11",
     "not op_mini all"
-  ]
+  ],
+  "devDependencies": {
+    "sw-precache": "^5.2.1"
+  }
 }

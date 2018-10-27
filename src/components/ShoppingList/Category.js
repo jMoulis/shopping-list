@@ -1,5 +1,7 @@
 import React, { Component, Fragment } from 'react';
 import PropTypes from 'prop-types';
+import ExpandLessIcon from '@material-ui/icons/ExpandLess';
+import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import {
   List,
   ListItem,
@@ -10,9 +12,10 @@ import {
   Collapse,
   Badge,
   Typography,
+  Input,
+  Grid,
+  IconButton,
 } from '@material-ui/core';
-import grey from '@material-ui/core/colors/grey';
-import AddIcon from '@material-ui/icons/Add';
 import Product from './Product';
 
 const styles = theme => ({
@@ -20,8 +23,9 @@ const styles = theme => ({
     lineHeight: '24px',
     display: 'flex',
     justifyContent: 'space-between',
-    padding: theme.spacing.unit * 2,
-    backgroundColor: theme.palette.grey[400],
+    padding: theme.spacing.unit,
+    backgroundColor: theme.palette.grey[100],
+    alignItems: 'center',
   },
   category: {
     marginTop: '1rem',
@@ -32,8 +36,6 @@ const styles = theme => ({
   form: {
     display: 'flex',
     flexDirection: 'column',
-    paddingLeft: 16,
-    paddingRight: 16,
   },
   btnContainer: {
     button: {
@@ -45,6 +47,16 @@ const styles = theme => ({
     top: 0,
     right: 0,
   },
+  noPadding: {
+    padding: 0,
+  },
+  listItem: {
+    padding: theme.spacing.unit,
+    paddingLeft: 0,
+  },
+  categoryName: {
+    marginLeft: theme.spacing.unit,
+  },
 });
 class Category extends Component {
   static propTypes = {
@@ -52,14 +64,19 @@ class Category extends Component {
     category: PropTypes.object.isRequired,
   };
 
-  state = {
-    form: {
-      product: {
-        name: '',
+  constructor(props) {
+    super(props);
+    console.log(props.category.name);
+    this.state = {
+      form: {
+        product: {
+          name: '',
+        },
       },
-    },
-    open: true,
-  };
+      categoryName: props.category.name || 'Enter name',
+      open: true,
+    };
+  }
 
   handleProductSubmit = ({ evt, category }) => {
     evt.preventDefault();
@@ -98,10 +115,11 @@ class Category extends Component {
     }));
   };
 
-  handleShowAddProductForm = () =>
+  handleShowAddProductForm = () => {
     this.setState(prevState => ({
       showAddProductForm: !prevState.showAddProductForm,
     }));
+  };
 
   handleClick = () => {
     this.setState(state => ({ open: !state.open }));
@@ -110,13 +128,58 @@ class Category extends Component {
   countProductUnchecked = products =>
     products.filter(product => !product.status).length;
 
-  renderSubHeader = (classes, category) => (
-    <ListSubheader
-      onClick={this.handleClick}
-      className={classes.subheader}
-      component="div"
-    >
-      <Typography>{category.name}</Typography>
+  handleEditable = () => {
+    this.setState(prevState => ({
+      editable: !prevState.editable,
+    }));
+  };
+
+  handleCategoryNameChange = ({ target }) => {
+    const { value } = target;
+    this.setState(() => ({
+      categoryName: value,
+    }));
+  };
+
+  handleOnBlur = () => {
+    const { socket, category } = this.props;
+    const { categoryName } = this.state;
+    socket.emit('UPDATE_CATEGORY', {
+      data: { categoryId: category._id, name: categoryName },
+    });
+    this.setState(() => ({
+      editable: false,
+    }));
+  };
+
+  renderSubHeader = (classes, category, categoryName, editable, open) => (
+    <ListSubheader className={classes.subheader} component="div">
+      <Grid container alignItems="center">
+        <IconButton
+          size="small"
+          className={classes.noPadding}
+          onClick={this.handleClick}
+        >
+          {open ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+        </IconButton>
+        {editable ? (
+          <Input
+            autoFocus
+            value={categoryName}
+            onBlur={this.handleOnBlur}
+            className={classes.input}
+            onChange={this.handleCategoryNameChange}
+          />
+        ) : (
+          <Typography
+            variant="h6"
+            className={classes.categoryName}
+            onClick={this.handleEditable}
+          >
+            {category.name || 'Enter a name'}
+          </Typography>
+        )}
+      </Grid>
       <Badge
         classes={{ badge: classes.badge }}
         badgeContent={this.countProductUnchecked(category.products)}
@@ -133,17 +196,29 @@ class Category extends Component {
 
   render() {
     const { category, socket, classes } = this.props;
-    const { form, showAddProductForm, open } = this.state;
+    const {
+      form,
+      showAddProductForm,
+      open,
+      editable,
+      categoryName,
+    } = this.state;
     return (
       <li className={classes.category}>
         <List
           className="category-products"
           dense
-          subheader={this.renderSubHeader(classes, category)}
+          subheader={this.renderSubHeader(
+            classes,
+            category,
+            categoryName,
+            editable,
+            open,
+          )}
         >
-          {category.products.map(product => (
-            <Collapse in={open} timeout="auto" unmountOnExit>
-              <ListItem button>
+          {category.products.map((product, index) => (
+            <Collapse key={index} in={open} timeout="auto" unmountOnExit>
+              <ListItem classes={{ root: classes.listItem }}>
                 <Product
                   key={product._id}
                   product={product}
@@ -161,6 +236,8 @@ class Category extends Component {
             onSubmit={evt => this.handleProductSubmit({ evt, category })}
           >
             <TextField
+              autoFocus
+              autoComplete="false"
               label="Product name"
               margin="dense"
               name="name"
@@ -195,15 +272,12 @@ class Category extends Component {
         ) : (
           <Fragment>
             {open && (
-              <Button
-                color="primary"
-                variant="contained"
+              <Typography
                 className={classes.button}
                 onClick={this.handleShowAddProductForm}
-                size="small"
               >
-                <AddIcon />
-              </Button>
+                + add a product
+              </Typography>
             )}
           </Fragment>
         )}
