@@ -14,6 +14,16 @@ const listSchema = new mongoose.Schema({
       ref: 'category',
     },
   ],
+  user: {
+    type: Schema.Types.ObjectId,
+    ref: 'user',
+  },
+  users: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: 'user',
+    },
+  ],
 });
 
 const List = mongoose.model('list', listSchema);

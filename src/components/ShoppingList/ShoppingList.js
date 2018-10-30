@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import AddIcon from '@material-ui/icons/Add';
+import ShareIcon from '@material-ui/icons/Share';
 import {
   Grid,
   Typography,
@@ -8,8 +9,11 @@ import {
   TextField,
   Button,
   SwipeableDrawer,
+  IconButton,
 } from '@material-ui/core';
 import Category from './Category';
+import ShareForm from './ShareForm';
+import MyCircularProgress from '../global/MyCircularProgress';
 
 const styles = theme => ({
   root: {
@@ -51,26 +55,13 @@ class ShoppingList extends React.Component {
           name: '',
         },
       },
+      showSharePanel: false,
     };
   }
 
   componentDidMount() {
-    const {
-      socket,
-      router: { match },
-    } = this.props;
-    const { id } = match.params;
-    socket.emit(
-      'FETCH_SHOPPING_LIST',
-      { _id: id },
-      ({ error, data, success }) => {
-        if (!success) {
-          return this.setError(error);
-        }
-
-        return this.setValueToState(data);
-      },
-    );
+    const { socket } = this.props;
+    this.fetchShoppingList();
     socket.on('CREATE_CATEGORY_SUCCESS', ({ payload }) =>
       this.addCategoryToList(payload),
     );
@@ -81,6 +72,33 @@ class ShoppingList extends React.Component {
       this.addProductsToCategory(payload),
     );
   }
+
+  fetchShoppingList = () => {
+    this.setState(() => ({
+      fetchShoppingListPending: true,
+    }));
+    const {
+      socket,
+      router: { match },
+    } = this.props;
+    const { id } = match.params;
+    socket.emit(
+      'FETCH_SHOPPING_LIST',
+      { _id: id },
+      ({ error, data, success }) => {
+        if (!success) {
+          this.setState(() => ({
+            fetchShoppingListPending: false,
+          }));
+          return this.setError(error);
+        }
+        this.setState(() => ({
+          fetchShoppingListPending: false,
+        }));
+        return this.setValueToState(data);
+      },
+    );
+  };
 
   addCategoryToList = data => {
     this.setState(prevState => ({
@@ -188,15 +206,43 @@ class ShoppingList extends React.Component {
       return this.addCategoryInput.current.focus();
   };
 
+  handleShare = () => {
+    this.setState(prevState => ({
+      showSharePanel: !prevState.showSharePanel,
+    }));
+  };
+
   render() {
-    const { error, data: list, inputAddCat, form } = this.state;
-    const { socket, classes } = this.props;
+    const {
+      error,
+      data: list,
+      inputAddCat,
+      form,
+      showSharePanel,
+      fetchShoppingListPending,
+    } = this.state;
+    const { socket, classes, loggedUser } = this.props;
+    if (fetchShoppingListPending) return <MyCircularProgress />;
     if (error) return <span>{error}</span>;
     if (Object.keys(list).length === 0) return <span>loading</span>;
     return (
       <Grid container direction="column" className={classes.root}>
         <Grid container justify="space-between" alignItems="center">
-          <Typography variant="h4">{list.name}</Typography>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            {loggedUser &&
+              loggedUser._id === list.user && (
+                <IconButton onClick={this.handleShare}>
+                  <ShareIcon />
+                </IconButton>
+              )}
+
+            <Typography variant="h4">{list.name}</Typography>
+          </div>
           <Button
             variant="contained"
             color="primary"
@@ -243,6 +289,14 @@ class ShoppingList extends React.Component {
             </form>
           </div>
         </SwipeableDrawer>
+        <ShareForm
+          show={showSharePanel}
+          onClose={this.handleShare}
+          onOpen={this.handleShare}
+          socket={socket}
+          listId={list._id}
+          loggedUser={loggedUser}
+        />
         <ul>
           {list.categories.map((category, index) => (
             <Category key={index} socket={socket} category={category} />

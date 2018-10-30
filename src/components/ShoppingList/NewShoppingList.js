@@ -25,9 +25,9 @@ class NewShoppingList extends Component {
 
   handleSubmit = evt => {
     evt.preventDefault();
-    const { socket, onCancel } = this.props;
+    const { socket, onCancel, loggedUser } = this.props;
     const { form } = this.state;
-    socket.emit('CREATE_NEW_SHOPPING_LIST', { data: form });
+    socket.emit('CREATE_NEW_SHOPPING_LIST', { data: form, loggedUser });
     onCancel();
   };
 
@@ -55,7 +55,7 @@ class NewShoppingList extends Component {
           onChange={this.handleInputChange}
           value={name}
           className={classes.textField}
-          variant="outlined"
+          autoFocus
         />
         <div>
           <Button

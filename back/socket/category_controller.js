@@ -25,7 +25,6 @@ module.exports = ({ socket, io }) => {
     }
   });
   socket.on('UPDATE_CATEGORY', async ({ data }) => {
-    console.log(data);
     try {
       await categoryModel.updateOne(
         { _id: data.categoryId },
@@ -53,9 +52,9 @@ module.exports = ({ socket, io }) => {
       );
       const products = await categoryModel.findOne(
         { _id: data.category },
-        { products: 1 },
+        { products: 1, list: 1 },
       );
-      io.emit('CREATE_PRODUCT_SUCCESS', {
+      io.to(products.list.toString()).emit('CREATE_PRODUCT_SUCCESS', {
         payload: products,
       });
       aknowledgement();
