@@ -19,6 +19,7 @@ class App extends React.Component {
     this.state = {
       loggedUserId: localStorage.getItem('loggedUserId') || null,
       loggedUser: null,
+      isOnLine: true,
     };
 
     this.socket = io(`${API_URL}`);
@@ -26,6 +27,16 @@ class App extends React.Component {
       console.log('client connected');
     });
 
+    this.socket.on('connect_error', error => {
+      this.setState(() => ({
+        isOnLine: false,
+      }));
+    });
+    this.socket.on('reconnect', () => {
+      this.setState(() => ({
+        isOnLine: true,
+      }));
+    });
     this.socket.on('CONNECT_SUCCESS', ({ message }) => {
       console.log(message);
     });
@@ -88,7 +99,7 @@ class App extends React.Component {
   };
 
   render() {
-    const { hideArrowBack, loggedUser, loggedUserId } = this.state;
+    const { isOnLine, hideArrowBack, loggedUser, loggedUserId } = this.state;
     return (
       <main>
         <NavBar hideArrowBack={hideArrowBack} />
@@ -105,6 +116,7 @@ class App extends React.Component {
                   loggedUser={loggedUser}
                   loggedUserId={loggedUserId}
                   updateUser={this.updateUser}
+                  isOnLine={isOnLine}
                 />
               );
             }}
@@ -133,6 +145,7 @@ class App extends React.Component {
                   router={router}
                   socket={this.socket}
                   setLoggedUser={this.setLoggedUser}
+                  isOnLine={isOnLine}
                 />
               );
             }}
@@ -146,6 +159,7 @@ class App extends React.Component {
                   router={router}
                   socket={this.socket}
                   loggedUser={loggedUser}
+                  isOnLine={isOnLine}
                 />
               );
             }}

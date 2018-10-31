@@ -66,13 +66,11 @@ class Home extends React.Component {
 
   async componentDidMount() {
     const { socket } = this.props;
-
-    // if (!navigator.onLine) {
-    //   try {
-    //     this.fetchListFromIdb();
-    //   } catch (error) {}
-    // }
-    this.fetchShoppingList();
+    if (!window.navigator.onLine) {
+      this.fetchListFromIdb();
+    } else {
+      this.fetchShoppingList();
+    }
 
     socket.on('CREATE_NEW_SHOPPING_LIST_SUCCESS', ({ payload }) =>
       this.addNewValue(payload),

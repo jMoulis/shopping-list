@@ -30,14 +30,15 @@ module.exports = ({ io, socket, usersConnected }) => {
   });
 
   socket.on('FETCH_SHOPPING_LISTS', async ({ loggedUser }, acknowledgement) => {
-    console.log(loggedUser);
     try {
-      const shoppingLists = await listModel.find(
-        {
+      const shoppingLists = await listModel
+        .find({
           $or: [{ user: loggedUser }, { users: { $in: loggedUser } }],
-        },
-        { name: 1, user: 1 },
-      );
+        })
+        .populate({
+          path: 'categories',
+          ref: 'category',
+        });
       acknowledgement({ data: shoppingLists, success: true });
     } catch (error) {
       acknowledgement({ error: error.message, success: false });

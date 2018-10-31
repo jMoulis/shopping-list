@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import AddIcon from '@material-ui/icons/Add';
+import idb from 'idb';
 import ShareIcon from '@material-ui/icons/Share';
 import {
   Grid,
@@ -41,7 +42,9 @@ class ShoppingList extends React.Component {
 
   constructor(props) {
     super(props);
-    this.addCategoryInput = React.createRef();
+    this.idb = idb.open('shopping-lists-store', 1, db => {
+      db.createObjectStore('shopping-lists', { keyPath: '_id' });
+    });
     this.state = {
       data: {},
       error: null,
@@ -61,7 +64,12 @@ class ShoppingList extends React.Component {
 
   componentDidMount() {
     const { socket } = this.props;
-    this.fetchShoppingList();
+    if (!window.navigator.onLine) {
+      this.fetchListFromIdb();
+    } else {
+      this.fetchShoppingList();
+    }
+    this.fetchListFromIdb();
     socket.on('CREATE_CATEGORY_SUCCESS', ({ payload }) =>
       this.addCategoryToList(payload),
     );
@@ -72,6 +80,24 @@ class ShoppingList extends React.Component {
       this.addProductsToCategory(payload),
     );
   }
+
+  fetchListFromIdb = async () => {
+    const {
+      router: { match },
+    } = this.props;
+    const { id } = match.params;
+    const lists = await this.idb.then(db => {
+      const tx = db.transaction('shopping-lists', 'readonly');
+      const store = tx.objectStore('shopping-lists');
+      return store.getAll();
+    });
+    const list = lists.find(item => item._id === id);
+    if (list) {
+      this.setState(() => ({
+        data: list,
+      }));
+    }
+  };
 
   fetchShoppingList = () => {
     this.setState(() => ({
@@ -158,14 +184,9 @@ class ShoppingList extends React.Component {
   };
 
   handleShowInputAddCat = () => {
-    this.setState(
-      prevState => ({
-        inputAddCat: !prevState.inputAddCat,
-      }),
-      () => {
-        this.setInputFocus();
-      },
-    );
+    this.setState(prevState => ({
+      inputAddCat: !prevState.inputAddCat,
+    }));
   };
 
   handleInputCategoryChange = ({ target }) => {
@@ -201,11 +222,6 @@ class ShoppingList extends React.Component {
     }));
   };
 
-  setInputFocus = () => {
-    if (this.addCategoryInput.current)
-      return this.addCategoryInput.current.focus();
-  };
-
   handleShare = () => {
     this.setState(prevState => ({
       showSharePanel: !prevState.showSharePanel,
@@ -221,13 +237,14 @@ class ShoppingList extends React.Component {
       showSharePanel,
       fetchShoppingListPending,
     } = this.state;
-    const { socket, classes, loggedUser } = this.props;
+    const { socket, classes, loggedUser, isOnLine } = this.props;
     if (fetchShoppingListPending) return <MyCircularProgress />;
     if (error) return <span>{error}</span>;
     if (Object.keys(list).length === 0) return <span>loading</span>;
     return (
       <Grid container direction="column" className={classes.root}>
         <Grid container justify="space-between" alignItems="center">
+          {!isOnLine && <span>Offline</span>}
           <div
             style={{
               display: 'flex',
