@@ -237,14 +237,13 @@ class ShoppingList extends React.Component {
       showSharePanel,
       fetchShoppingListPending,
     } = this.state;
-    const { socket, classes, loggedUser, isOnLine } = this.props;
+    const { socket, classes, loggedUser } = this.props;
     if (fetchShoppingListPending) return <MyCircularProgress />;
     if (error) return <span>{error}</span>;
     if (Object.keys(list).length === 0) return <span>loading</span>;
     return (
       <Grid container direction="column" className={classes.root}>
         <Grid container justify="space-between" alignItems="center">
-          {!isOnLine && <span>Offline</span>}
           <div
             style={{
               display: 'flex',

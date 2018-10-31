@@ -66,7 +66,6 @@ class Category extends Component {
 
   constructor(props) {
     super(props);
-    console.log(props.category.name);
     this.state = {
       form: {
         product: {
@@ -80,6 +79,10 @@ class Category extends Component {
 
   handleProductSubmit = ({ evt, category }) => {
     evt.preventDefault();
+    this.createProduct(category);
+  };
+
+  createProduct = category => {
     const { socket } = this.props;
     const {
       form: { product },
